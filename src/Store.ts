@@ -1,7 +1,5 @@
-import DataFactory from "./DataFactory.ts"
-import * as RDF from "./rdf.d.ts"
-
-const { toId, fromId } = DataFactory.internal
+import DataFactory, { toId, fromId } from "./DataFactory"
+import * as RDF from "rdf-js"
 
 type Rotation = SPO | POS | OSP
 type SPO = ["subject", "predicate", "object"]
@@ -391,14 +389,6 @@ export default class Store {
 		}
 	}
 
-	// ### `import` adds a stream of quads to the store
-	public async import(stream: RDF.Stream): Promise<this> {
-		for await (const quad of stream) {
-			this.addQuad(quad)
-		}
-		return this
-	}
-
 	// ### `removeQuad` removes a quad from the store if it exists
 	public removeQuad(quad: RDF.Quad): boolean
 	public removeQuad(
@@ -551,6 +541,23 @@ export default class Store {
 		}
 	}
 
+	public getQuads(
+		subject: RDF.Term | string | null,
+		predicate: RDF.Term | string | null,
+		object: RDF.Term | string | null,
+		graph: RDF.Term | string | null
+	): RDF.Quad[] {
+		const s = typeof subject === "string" ? fromId(subject) : subject
+		const p = typeof predicate === "string" ? fromId(predicate) : predicate
+		const o = typeof object === "string" ? fromId(object) : object
+		const g = typeof graph === "string" ? fromId(graph) : graph
+		const quads: RDF.Quad[] = []
+		for (const quad of this.quads(s, p, o, g)) {
+			quads.push(quad)
+		}
+		return quads
+	}
+
 	// ### `countQuads` returns the number of quads matching a pattern.
 	// Setting any field to `undefined` or `null` indicates a wildcard.
 	public countQuads(
@@ -593,12 +600,16 @@ export default class Store {
 	}
 
 	public getSubjects(
-		predicate: RDF.Term | null,
-		object: RDF.Term | null,
-		graph: RDF.Term | null
+		predicate: RDF.Term | string | null,
+		object: RDF.Term | string | null,
+		graph: RDF.Term | string | null
 	): RDF.Quad_Subject[] {
+		const p = typeof predicate === "string" ? fromId(predicate) : predicate
+		const o = typeof object === "string" ? fromId(object) : object
+		const g = typeof graph === "string" ? fromId(graph) : graph
+
 		const results: RDF.Quad_Subject[] = []
-		for (const subject of this.subjects(predicate, object, graph)) {
+		for (const subject of this.subjects(p, o, g)) {
 			results.push(subject)
 		}
 		return results
@@ -643,12 +654,16 @@ export default class Store {
 	}
 
 	public getPredicates(
-		subject: RDF.Term | null,
-		object: RDF.Term | null,
-		graph: RDF.Term | null
+		subject: RDF.Term | string | null,
+		object: RDF.Term | string | null,
+		graph: RDF.Term | string | null
 	): RDF.Quad_Predicate[] {
+		const s = typeof subject === "string" ? fromId(subject) : subject
+		const o = typeof object === "string" ? fromId(object) : object
+		const g = typeof graph === "string" ? fromId(graph) : graph
+
 		const terms: RDF.Quad_Predicate[] = []
-		for (const predicate of this.predicates(subject, object, graph)) {
+		for (const predicate of this.predicates(s, o, g)) {
 			terms.push(predicate)
 		}
 		return terms
@@ -695,12 +710,16 @@ export default class Store {
 	// ### `getObjects` returns all objects that match the pattern.
 	// Setting any field to `undefined` or `null` indicates a wildcard.
 	public getObjects(
-		subject: RDF.Term | null,
-		predicate: RDF.Term | null,
-		graph: RDF.Term | null
+		subject: RDF.Term | string | null,
+		predicate: RDF.Term | string | null,
+		graph: RDF.Term | string | null
 	): RDF.Quad_Object[] {
+		const s = typeof subject === "string" ? fromId(subject) : subject
+		const p = typeof predicate === "string" ? fromId(predicate) : predicate
+		const g = typeof graph === "string" ? fromId(graph) : graph
+
 		const terms: RDF.Quad_Object[] = []
-		for (const object of this.objects(subject, predicate, graph)) {
+		for (const object of this.objects(s, p, g)) {
 			terms.push(object)
 		}
 		return terms
@@ -760,14 +779,34 @@ export default class Store {
 		}
 	}
 
+	public getGraphs(
+		subject: RDF.Term | string | null,
+		predicate: RDF.Term | string | null,
+		object: RDF.Term | string | null
+	): RDF.Quad_Graph[] {
+		const s = typeof subject === "string" ? fromId(subject) : subject
+		const p = typeof predicate === "string" ? fromId(predicate) : predicate
+		const o = typeof object === "string" ? fromId(object) : object
+
+		const results: RDF.Quad_Graph[] = []
+		for (const graph of this.graphs(s, p, o)) {
+			results.push(graph)
+		}
+		return results
+	}
+
 	public *graphs(
-		subject: RDF.Term | null,
-		predicate: RDF.Term | null,
-		object: RDF.Term | null
+		subject: RDF.Term | string | null,
+		predicate: RDF.Term | string | null,
+		object: RDF.Term | string | null
 	): Generator<RDF.Quad_Graph> {
+		const s = typeof subject === "string" ? fromId(subject) : subject
+		const p = typeof predicate === "string" ? fromId(predicate) : predicate
+		const o = typeof object === "string" ? fromId(object) : object
+
 		for (const graph of this.#graphs.keys()) {
 			const g = fromId(graph, this.#factory)
-			for (const _ of this.quads(subject, predicate, object, g)) {
+			for (const _ of this.quads(s, p, o, g)) {
 				yield g as RDF.Quad_Graph
 				break
 			}

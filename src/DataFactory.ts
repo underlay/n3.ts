@@ -1,5 +1,5 @@
-import iris from "./IRIs.ts"
-import * as RDF from "./rdf.d.ts"
+import iris from "./IRIs"
+import * as RDF from "rdf-js"
 
 const { rdf, xsd } = iris
 
@@ -11,7 +11,7 @@ interface Term<T extends string> {
 	readonly value: string
 }
 
-abstract class baseTerm<T extends string> implements Term<T> {
+export abstract class BaseTerm<T extends string> implements Term<T> {
 	abstract get termType(): T
 	abstract get value(): string
 	constructor(readonly id: string) {}
@@ -19,7 +19,7 @@ abstract class baseTerm<T extends string> implements Term<T> {
 	equals(term: RDF.Term): boolean {
 		if (term === null || term === undefined) {
 			return false
-		} else if (term instanceof baseTerm) {
+		} else if (term instanceof BaseTerm) {
 			return this.id === term.id
 		} else {
 			return this.termType === term.termType && this.value === term.value
@@ -40,7 +40,7 @@ type BlankNodeT = "BlankNode"
 type DefaultGraphT = "DefaultGraph"
 type VariableT = "Variable"
 
-class NamedNode extends baseTerm<NamedNodeT> implements RDF.NamedNode {
+export class NamedNode extends BaseTerm<NamedNodeT> implements RDF.NamedNode {
 	get termType(): NamedNodeT {
 		return "NamedNode"
 	}
@@ -51,7 +51,7 @@ class NamedNode extends baseTerm<NamedNodeT> implements RDF.NamedNode {
 }
 
 // ## Literal constructor
-class Literal extends baseTerm<LiteralT> implements RDF.Literal {
+export class Literal extends BaseTerm<LiteralT> implements RDF.Literal {
 	get termType(): LiteralT {
 		return "Literal"
 	}
@@ -113,7 +113,7 @@ class Literal extends baseTerm<LiteralT> implements RDF.Literal {
 	}
 }
 
-class BlankNode extends baseTerm<BlankNodeT> implements RDF.BlankNode {
+export class BlankNode extends BaseTerm<BlankNodeT> implements RDF.BlankNode {
 	constructor(name: string) {
 		super("_:" + name)
 	}
@@ -127,7 +127,7 @@ class BlankNode extends baseTerm<BlankNodeT> implements RDF.BlankNode {
 	}
 }
 
-class Variable extends baseTerm<VariableT> implements RDF.Variable {
+export class Variable extends BaseTerm<VariableT> implements RDF.Variable {
 	constructor(name: string) {
 		super("?" + name)
 	}
@@ -141,7 +141,8 @@ class Variable extends baseTerm<VariableT> implements RDF.Variable {
 	}
 }
 
-class DefaultGraph extends baseTerm<DefaultGraphT> implements RDF.DefaultGraph {
+export class DefaultGraph extends BaseTerm<DefaultGraphT>
+	implements RDF.DefaultGraph {
 	constructor() {
 		super("")
 	}
@@ -157,7 +158,7 @@ class DefaultGraph extends baseTerm<DefaultGraphT> implements RDF.DefaultGraph {
 
 export const Default = new DefaultGraph()
 
-function fromId(id: string, factory?: RDF.DataFactory) {
+export function fromId(id: string, factory?: RDF.DataFactory) {
 	factory = factory || DataFactory
 
 	if (id === "") {
@@ -168,7 +169,7 @@ function fromId(id: string, factory?: RDF.DataFactory) {
 		case "_":
 			return factory.blankNode(id.substr(2))
 		case "?":
-			return factory.variable(id.substr(1))
+			return factory.variable!(id.slice(1))
 		case '"':
 			// Shortcut for internal literals
 			if (factory === DataFactory) return new Literal(id)
@@ -190,10 +191,10 @@ function fromId(id: string, factory?: RDF.DataFactory) {
 
 // type Term = NamedNode | BlankNode | Literal | DefaultGraph | Variable
 // ### Constructs an internal string ID from the given term or ID string
-function toId(term: string | RDF.Term): string {
+export function toId(term: string | RDF.Term): string {
 	if (typeof term === "string") {
 		return term
-	} else if (term instanceof baseTerm) {
+	} else if (term instanceof BaseTerm) {
 		return term.id
 	} else if (!term) {
 		return ""
@@ -226,7 +227,7 @@ function toId(term: string | RDF.Term): string {
 }
 
 // ## Quad constructor
-class Quad {
+export class Quad {
 	readonly graph: NamedNode | BlankNode | DefaultGraph | Variable
 	constructor(
 		readonly subject: NamedNode | BlankNode | Variable,
@@ -271,7 +272,7 @@ function blankNode(name: string): BlankNode {
 }
 
 // ### Creates a literal
-function literal(value: string, languageOrDataType: string | NamedNode) {
+function literal(value: string, languageOrDataType?: string | NamedNode) {
 	// Create a language-tagged string
 	if (typeof languageOrDataType === "string") {
 		return new Literal('"' + value + '"@' + languageOrDataType.toLowerCase())
@@ -319,26 +320,13 @@ function quad(
 	return new Quad(subject, predicate, object, graph)
 }
 
-const DataFactory = {
+const DataFactory: RDF.DataFactory = {
 	namedNode,
 	blankNode,
 	variable,
 	literal,
 	defaultGraph,
 	quad,
-
-	internal: {
-		baseTerm: baseTerm,
-		NamedNode,
-		BlankNode,
-		Variable,
-		Literal,
-		DefaultGraph,
-		Quad,
-		Triple: Quad,
-		fromId,
-		toId,
-	},
 }
 
 export default DataFactory

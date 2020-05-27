@@ -1,6 +1,9 @@
 {
 	"compilerOptions": {
 		"target": "ESNext",
-		"strict": true
+		"strict": true,
+		"alwaysStrict": true,
+		"declaration": true,
+		"outDir": "lib"
 	}
 }
