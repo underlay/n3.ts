@@ -1,4 +1,4 @@
-import IRIs from "./IRIs"
+import IRIs from "./IRIs.js"
 import DataFactory, {
 	toId,
 	fromId,
@@ -9,8 +9,8 @@ import DataFactory, {
 	Literal,
 	DefaultGraph,
 	Variable,
-} from "./DataFactory"
-import Store from "./Store"
+} from "./DataFactory.js"
+import Store from "./Store.js"
 
 export {
 	IRIs,

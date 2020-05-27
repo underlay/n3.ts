@@ -1,5 +1,6 @@
-import DataFactory, { toId, fromId } from "./DataFactory"
 import * as RDF from "rdf-js"
+
+import DataFactory, { toId, fromId } from "./DataFactory.js"
 
 type Rotation = SPO | POS | OSP
 type SPO = ["subject", "predicate", "object"]

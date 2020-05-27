@@ -1,5 +1,6 @@
-import iris from "./IRIs"
 import * as RDF from "rdf-js"
+
+import iris from "./IRIs.js"
 
 const { rdf, xsd } = iris
 
