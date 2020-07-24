@@ -12,6 +12,7 @@ declare type Index = Map<number, Map<number, Set<number>>>;
 export default class Store {
     #private;
     constructor(quads?: QuadT[]);
+    [Symbol.iterator](): Iterator<Quad>;
     get size(): number;
     private addToIndex;
     private removeFromIndex;

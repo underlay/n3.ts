@@ -54,7 +54,9 @@ export default class Store {
 		}
 	}
 
-	// ## Public properties
+	[Symbol.iterator](): Iterator<Quad> {
+		return this.quads(null, null, null, null)
+	}
 
 	// ### `size` returns the number of quads in the store
 	get size() {
