@@ -8,6 +8,8 @@ const rdfNil = "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"
 const rdfFirst = "http://www.w3.org/1999/02/22-rdf-syntax-ns#first"
 const rdfRest = "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest"
 const rdfLangString = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
+const xsdDate = "http://www.w3.org/2001/XMLSchema#date"
+const xsdDateTime = "http://www.w3.org/2001/XMLSchema#dateTime"
 
 export default {
 	xsd: {
@@ -16,6 +18,8 @@ export default {
 		double: xsdDouble as typeof xsdDouble,
 		integer: xsdInteger as typeof xsdInteger,
 		string: xsdString as typeof xsdString,
+		date: xsdDate as typeof xsdDate,
+		dateTime: xsdDateTime as typeof xsdDateTime,
 	},
 	rdf: {
 		type: rdfType as typeof rdfType,

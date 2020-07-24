@@ -1,6 +1,15 @@
 import * as RDF from "rdf-js"
 
-import DataFactory, { toId, fromId } from "./DataFactory.js"
+import DataFactory, { toId, fromId, Quad, D } from "./DataFactory.js"
+import {
+	Subject,
+	Predicate,
+	Object,
+	Graph,
+	TermType,
+	Term,
+	QuadT,
+} from "./rdf.js"
 
 type Rotation = SPO | POS | OSP
 type SPO = ["subject", "predicate", "object"]
@@ -25,8 +34,7 @@ export default class Store {
 	#size: number | null
 	#graphs: Map<string, GraphIndex>
 	#blankNodeIndex: number
-	#factory: RDF.DataFactory
-	constructor(quads?: RDF.Quad[], options?: { factory?: RDF.DataFactory }) {
+	constructor(quads?: QuadT[]) {
 		// The number of quads is initially zero
 		this.#size = 0
 		// `#graphs` contains subject, predicate, and object indexes per graph
@@ -39,9 +47,6 @@ export default class Store {
 		this.#entities = new Map() // inverse of `#ids`
 		// `#blankNodeIndex` is the index of the last automatically named blank node
 		this.#blankNodeIndex = 0
-
-		options = options || {}
-		this.#factory = options.factory || DataFactory
 
 		// Add quads if passed
 		if (Array.isArray(quads) && quads.length > 0) {
@@ -124,7 +129,7 @@ export default class Store {
 		key2: number | null,
 		rotation: Rotation,
 		graph: string
-	): Generator<RDF.Quad, void> {
+	): Generator<Quad, void> {
 		const entities: [string, string, string] = ["", "", ""]
 		if (key0) {
 			const index1 = index0.get(key0)
@@ -161,7 +166,7 @@ export default class Store {
 		key2: number | null,
 		r: Rotation,
 		graph: string
-	): Generator<RDF.Quad, void> {
+	): Generator<Quad, void> {
 		if (key1) {
 			const index2 = index1.get(key1)
 			if (index2 !== undefined) {
@@ -182,7 +187,7 @@ export default class Store {
 		index2: Set<number>,
 		r: Rotation,
 		graph: string
-	): Generator<RDF.Quad, void> {
+	): Generator<Quad, void> {
 		if (key2) {
 			if (index2.has(key2)) {
 				e[2] = this.#entities.get(key2)!
@@ -200,20 +205,20 @@ export default class Store {
 		[entity0, entity1, entity2]: [string, string, string],
 		[name0, name1, name2]: Rotation,
 		graph: string
-	): RDF.Quad {
+	): Quad {
 		const parts: {
-			subject: RDF.Term | null
-			predicate: RDF.Term | null
-			object: RDF.Term | null
+			subject: D[TermType] | null
+			predicate: D[TermType] | null
+			object: D[TermType] | null
 		} = { subject: null, predicate: null, object: null }
-		parts[name0] = fromId(entity0, this.#factory)
-		parts[name1] = fromId(entity1, this.#factory)
-		parts[name2] = fromId(entity2, this.#factory)
-		return this.#factory.quad(
-			parts.subject as RDF.Quad_Subject,
-			parts.predicate as RDF.Quad_Predicate,
-			parts.object as RDF.Quad_Object,
-			fromId(graph, this.#factory) as RDF.Quad_Graph
+		parts[name0] = fromId(entity0)
+		parts[name1] = fromId(entity1)
+		parts[name2] = fromId(entity2)
+		return new Quad(
+			parts.subject as Subject<D>,
+			parts.predicate as Predicate<D>,
+			parts.object as Object<D>,
+			fromId(graph) as Graph<D>
 		)
 	}
 
@@ -252,7 +257,7 @@ export default class Store {
 		}
 	}
 
-	// ### `_countInIndex` counts matching quads in a three-layered index.
+	// ### `countInIndex` counts matching quads in a three-layered index.
 	// The index base is `index0` and the keys at each level are `key0`, `key1`, and `key2`.
 	// Any of these keys can be undefined, which is interpreted as a wildcard.
 	private countInIndex(
@@ -324,30 +329,29 @@ export default class Store {
 
 	// ### `addQuad` adds a new quad to the store.
 	// Returns if the quad index has changed, if the quad did not already exist.
-	public addQuad(quad: RDF.Quad): void
+	public addQuad(quad: QuadT): void
 	public addQuad(
-		subject: RDF.Term,
-		predicate: RDF.Term,
-		object: RDF.Term,
-		graph?: RDF.Term
+		subject: Term,
+		predicate: Term,
+		object: Term,
+		graph?: Term
 	): void
-	public addQuad(...args: any[]) {
+	public addQuad(...args: [QuadT] | [Term, Term, Term, Term?]) {
 		let [subject, predicate, object, graph] = ["", "", "", ""]
 		if (args.length === 1) {
 			subject = toId(args[0].subject)
 			predicate = toId(args[0].predicate)
 			object = toId(args[0].object)
 			graph = toId(args[0].graph)
-		} else if (args.length === 3) {
+		} else {
 			subject = toId(args[0])
 			predicate = toId(args[1])
 			object = toId(args[2])
-			graph = ""
-		} else if (args.length === 4) {
-			subject = toId(args[0])
-			predicate = toId(args[1])
-			object = toId(args[2])
-			graph = toId(args[3])
+			if (args[3] === undefined) {
+				graph = ""
+			} else {
+				graph = toId(args[3])
+			}
 		}
 
 		const graphIndex = this.getGraphIndex(graph)
@@ -384,7 +388,7 @@ export default class Store {
 	}
 
 	// ### `addQuads` adds multiple quads to the store
-	public addQuads(quads: RDF.Quad[]) {
+	public addQuads(quads: QuadT[]) {
 		for (const quad of quads) {
 			this.addQuad(quad)
 		}
@@ -486,39 +490,42 @@ export default class Store {
 		return this.removeMatches(null, null, null, graph)
 	}
 
+	private getGraphId(graph: Term | string): string | undefined {
+		const graphId = toId(graph)
+		if (this.#graphs.has(graphId)) {
+			return graphId
+		} else {
+			return undefined
+		}
+	}
+
+	// TODO::::::
 	private getIds(
-		s: RDF.Term | null,
-		p: RDF.Term | null,
-		o: RDF.Term | null,
-		graph: RDF.Term | null
-	): [number | null, number | null, number | null, string | null] {
+		s: Term | string | null,
+		p: Term | string | null,
+		o: Term | string | null,
+		graph: Term | string | null
+	): [
+		number | null | undefined,
+		number | null | undefined,
+		number | null | undefined,
+		string | null | undefined
+	] {
 		return [
-			(s && this.#ids.get(toId(s))) || null,
-			(p && this.#ids.get(toId(p))) || null,
-			(o && this.#ids.get(toId(o))) || null,
-			graph && toId(graph),
+			s === null ? null : this.#ids.get(toId(s)),
+			p === null ? null : this.#ids.get(toId(p)),
+			o === null ? null : this.#ids.get(toId(o)),
+			graph === null ? null : this.getGraphId(graph),
 		]
 	}
 
-	// ### `match` returns a stream of quads matching a pattern.
-	// Setting any field to `undefined` or `null` indicates a wildcard.
-	public *quads(
-		subject: RDF.Term | null,
-		predicate: RDF.Term | null,
-		object: RDF.Term | null,
-		graph: RDF.Term | null
-	): Generator<RDF.Quad, void> {
-		const [s, p, o, g] = this.getIds(subject, predicate, object, graph)
-		if (
-			(subject !== null && s === null) ||
-			(predicate !== null && p === null) ||
-			(object !== null && o === null)
-		) {
-			return
-		}
-
+	private *q(
+		s: number | null,
+		p: number | null,
+		o: number | null,
+		g: string | null
+	): Generator<Quad, void> {
 		const graphs = this.getGraphIndices(g)
-
 		for (const [graphId, { subjects, predicates, objects }] of graphs) {
 			// Choose the optimal index, based on what fields are present
 			if (s) {
@@ -542,36 +549,48 @@ export default class Store {
 		}
 	}
 
-	public getQuads(
-		subject: RDF.Term | string | null,
-		predicate: RDF.Term | string | null,
-		object: RDF.Term | string | null,
-		graph: RDF.Term | string | null
-	): RDF.Quad[] {
-		const s = typeof subject === "string" ? fromId(subject) : subject
-		const p = typeof predicate === "string" ? fromId(predicate) : predicate
-		const o = typeof object === "string" ? fromId(object) : object
-		const g = typeof graph === "string" ? fromId(graph) : graph
-		const quads: RDF.Quad[] = []
-		for (const quad of this.quads(s, p, o, g)) {
-			quads.push(quad)
+	// ### `match` returns a stream of quads matching a pattern.
+	// Setting any field to `undefined` or `null` indicates a wildcard.
+	public *quads(
+		subject: Term | string | null,
+		predicate: Term | string | null,
+		object: Term | string | null,
+		graph: Term | string | null
+	): Generator<Quad, void> {
+		const [s, p, o, g] = this.getIds(subject, predicate, object, graph)
+		if (
+			s === undefined ||
+			p === undefined ||
+			o === undefined ||
+			g === undefined
+		) {
+			return
 		}
-		return quads
+
+		yield* this.q(s, p, o, g)
 	}
 
-	// ### `countQuads` returns the number of quads matching a pattern.
-	// Setting any field to `undefined` or `null` indicates a wildcard.
+	public getQuads(
+		subject: Term | string | null,
+		predicate: Term | string | null,
+		object: Term | string | null,
+		graph: Term | string | null
+	): Quad[] {
+		return Array.from(this.quads(subject, predicate, object, graph))
+	}
+
 	public countQuads(
-		subject: RDF.Term | null,
-		predicate: RDF.Term | null,
-		object: RDF.Term | null,
-		graph: RDF.Term | null
+		subject: Term | string | null,
+		predicate: Term | string | null,
+		object: Term | string | null,
+		graph: Term | string | null
 	): number {
 		const [s, p, o, g] = this.getIds(subject, predicate, object, graph)
 		if (
-			(subject !== null && s === null) ||
-			(predicate !== null && p === null) ||
-			(object !== null && o === null)
+			s === undefined ||
+			p === undefined ||
+			o === undefined ||
+			g === undefined
 		) {
 			return 0
 		}
@@ -579,6 +598,7 @@ export default class Store {
 		const graphs = this.getGraphIndices(g)
 
 		let count = 0
+
 		for (const content of graphs.values()) {
 			if (s) {
 				if (o) {
@@ -601,28 +621,20 @@ export default class Store {
 	}
 
 	public getSubjects(
-		predicate: RDF.Term | string | null,
-		object: RDF.Term | string | null,
-		graph: RDF.Term | string | null
-	): RDF.Quad_Subject[] {
-		const p = typeof predicate === "string" ? fromId(predicate) : predicate
-		const o = typeof object === "string" ? fromId(object) : object
-		const g = typeof graph === "string" ? fromId(graph) : graph
-
-		const results: RDF.Quad_Subject[] = []
-		for (const subject of this.subjects(p, o, g)) {
-			results.push(subject)
-		}
-		return results
+		predicate: Term | string | null,
+		object: Term | string | null,
+		graph: Term | string | null
+	): Subject<D>[] {
+		return Array.from(this.subjects(predicate, object, graph))
 	}
 
 	public *subjects(
-		predicate: RDF.Term | null,
-		object: RDF.Term | null,
-		graph: RDF.Term | null
-	): Generator<RDF.Quad_Subject, void, undefined> {
+		predicate: Term | string | null,
+		object: Term | string | null,
+		graph: Term | string | null
+	): Generator<Subject<D>, void, undefined> {
 		const [_, p, o, g] = this.getIds(null, predicate, object, graph)
-		if ((predicate !== null && p === null) || (object !== null && o === null)) {
+		if (p === undefined || o === undefined || g === undefined) {
 			return
 		}
 
@@ -649,34 +661,26 @@ export default class Store {
 			}
 
 			for (const s of iterator) {
-				yield* this.unique(s, ids)
+				yield* this.unique(s, ids) as Generator<Subject<D>>
 			}
 		}
 	}
 
 	public getPredicates(
-		subject: RDF.Term | string | null,
-		object: RDF.Term | string | null,
-		graph: RDF.Term | string | null
-	): RDF.Quad_Predicate[] {
-		const s = typeof subject === "string" ? fromId(subject) : subject
-		const o = typeof object === "string" ? fromId(object) : object
-		const g = typeof graph === "string" ? fromId(graph) : graph
-
-		const terms: RDF.Quad_Predicate[] = []
-		for (const predicate of this.predicates(s, o, g)) {
-			terms.push(predicate)
-		}
-		return terms
+		subject: Term | string | null,
+		object: Term | string | null,
+		graph: Term | string | null
+	): Predicate<D>[] {
+		return Array.from(this.predicates(subject, object, graph))
 	}
 
 	public *predicates(
-		subject: RDF.Term | null,
-		object: RDF.Term | null,
-		graph: RDF.Term | null
-	): Generator<RDF.Quad_Predicate, void, undefined> {
+		subject: Term | string | null,
+		object: Term | string | null,
+		graph: Term | string | null
+	): Generator<Predicate<D>, void, undefined> {
 		const [s, _, o, g] = this.getIds(subject, null, object, graph)
-		if ((subject !== null && s === null) || (object !== null && o === null)) {
+		if (s === undefined || o === undefined || g === undefined) {
 			return
 		}
 
@@ -703,7 +707,7 @@ export default class Store {
 				iterator = predicates.keys()
 			}
 			for (const p of iterator) {
-				yield* this.unique(p, ids)
+				yield* this.unique(p, ids) as Generator<Predicate<D>>
 			}
 		}
 	}
@@ -711,41 +715,20 @@ export default class Store {
 	// ### `getObjects` returns all objects that match the pattern.
 	// Setting any field to `undefined` or `null` indicates a wildcard.
 	public getObjects(
-		subject: RDF.Term | string | null,
-		predicate: RDF.Term | string | null,
-		graph: RDF.Term | string | null
-	): RDF.Quad_Object[] {
-		const s = typeof subject === "string" ? fromId(subject) : subject
-		const p = typeof predicate === "string" ? fromId(predicate) : predicate
-		const g = typeof graph === "string" ? fromId(graph) : graph
-
-		const terms: RDF.Quad_Object[] = []
-		for (const object of this.objects(s, p, g)) {
-			terms.push(object)
-		}
-		return terms
-	}
-
-	private *unique<T extends RDF.Term>(
-		id: number,
-		ids: Set<number>
-	): Generator<T, void, unknown> {
-		if (!ids.has(id)) {
-			ids.add(id)
-			yield fromId(this.#entities.get(id)!, this.#factory) as T
-		}
+		subject: Term | string | null,
+		predicate: Term | string | null,
+		graph: Term | string | null
+	): Object<D>[] {
+		return Array.from(this.objects(subject, predicate, graph))
 	}
 
 	public *objects(
-		subject: RDF.Term | null,
-		predicate: RDF.Term | null,
-		graph: RDF.Term | null
-	): Generator<RDF.Quad_Object, void, undefined> {
+		subject: Term | string | null,
+		predicate: Term | string | null,
+		graph: Term | string | null
+	): Generator<Object<D>, void, undefined> {
 		const [s, p, _, g] = this.getIds(subject, predicate, null, graph)
-		if (
-			(subject !== null && s === null) ||
-			(predicate !== null && p === null)
-		) {
+		if (s === undefined || p === undefined || g === undefined) {
 			return
 		}
 
@@ -758,59 +741,62 @@ export default class Store {
 				if (p) {
 					// If subject and predicate are given, the SPO index is best.
 					for (const o of this.loopBy2Keys(subjects, s, p)) {
-						yield* this.unique(o, ids)
+						yield* this.unique(o, ids) as Generator<Object<D>>
 					}
 				} else {
 					// If only subject is given, the OSP index is best.
 					for (const o of this.loopByKey1(objects, s)) {
-						yield* this.unique(o, ids)
+						yield* this.unique(o, ids) as Generator<Object<D>>
 					}
 				}
 			} else if (p) {
 				// If only predicate is given, the POS index is best.
 				for (const o of this.loopByKey0(predicates, p)) {
-					yield* this.unique(o, ids)
+					yield* this.unique(o, ids) as Generator<Object<D>>
 				}
 			} else {
 				// If no params given, iterate all the objects.
 				for (const o of objects.keys()) {
-					yield* this.unique(o, ids)
+					yield* this.unique(o, ids) as Generator<Object<D>>
 				}
 			}
 		}
 	}
 
 	public getGraphs(
-		subject: RDF.Term | string | null,
-		predicate: RDF.Term | string | null,
-		object: RDF.Term | string | null
-	): RDF.Quad_Graph[] {
-		const s = typeof subject === "string" ? fromId(subject) : subject
-		const p = typeof predicate === "string" ? fromId(predicate) : predicate
-		const o = typeof object === "string" ? fromId(object) : object
-
-		const results: RDF.Quad_Graph[] = []
-		for (const graph of this.graphs(s, p, o)) {
-			results.push(graph)
-		}
-		return results
+		subject: Term | string | null,
+		predicate: Term | string | null,
+		object: Term | string | null
+	): Graph<D>[] {
+		return Array.from(this.graphs(subject, predicate, object))
 	}
 
 	public *graphs(
-		subject: RDF.Term | string | null,
-		predicate: RDF.Term | string | null,
-		object: RDF.Term | string | null
-	): Generator<RDF.Quad_Graph> {
-		const s = typeof subject === "string" ? fromId(subject) : subject
-		const p = typeof predicate === "string" ? fromId(predicate) : predicate
-		const o = typeof object === "string" ? fromId(object) : object
+		subject: Term | string | null,
+		predicate: Term | string | null,
+		object: Term | string | null
+	): Generator<Graph<D>> {
+		const [s, p, o, _] = this.getIds(subject, predicate, object, null)
+		if (s === undefined || p === undefined || o === undefined) {
+			return
+		}
 
-		for (const graph of this.#graphs.keys()) {
-			const g = fromId(graph, this.#factory)
-			for (const _ of this.quads(s, p, o, g)) {
-				yield g as RDF.Quad_Graph
+		for (const g of this.#graphs.keys()) {
+			const graph = fromId(g) as Graph<D>
+			for (const _ of this.q(s, p, o, g)) {
+				yield graph
 				break
 			}
+		}
+	}
+
+	private *unique(
+		id: number,
+		ids: Set<number>
+	): Generator<D[TermType], void, unknown> {
+		if (!ids.has(id)) {
+			ids.add(id)
+			yield fromId(this.#entities.get(id)!)
 		}
 	}
 
@@ -832,6 +818,6 @@ export default class Store {
 		const id = ++this.#id
 		this.#ids.set(name, id)
 		this.#entities.set(id, name)
-		return this.#factory.blankNode(name.substr(2))
+		return DataFactory.blankNode(name.substr(2))
 	}
 }

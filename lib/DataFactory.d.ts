@@ -1,121 +1,72 @@
 import * as RDF from "rdf-js";
-interface Term<T extends string> {
-    termType: T;
-    readonly id: string;
-    readonly value: string;
-}
-export declare abstract class BaseTerm<T extends string> implements Term<T> {
+import { Term, TermT, QuadT, NamedNodeT, BlankNodeT, LiteralT, DefaultGraphT, VariableT, DataModel, TermType, Subject, Predicate, Object, Graph, BaseQuad } from "./rdf.js";
+declare abstract class BaseTerm<T extends TermType> {
     readonly id: string;
     abstract get termType(): T;
-    abstract get value(): string;
+    abstract get value(): [T] extends [DefaultGraphT] ? "" : string;
     constructor(id: string);
-    equals(term: RDF.Term): boolean;
-    toJSON(): {
-        termType: T;
-        value: string;
-    };
+    abstract toJSON(): TermT<T>;
+    equals(term?: null | Term): boolean;
 }
-declare type NamedNodeT = "NamedNode";
-declare type LiteralT = "Literal";
-declare type BlankNodeT = "BlankNode";
-declare type DefaultGraphT = "DefaultGraph";
-declare type VariableT = "Variable";
-export declare class NamedNode extends BaseTerm<NamedNodeT> implements RDF.NamedNode {
+export declare class NamedNode extends BaseTerm<NamedNodeT> implements RDF.NamedNode, TermT<NamedNodeT> {
+    constructor(value: string);
     get termType(): NamedNodeT;
     get value(): string;
+    toJSON(): TermT<NamedNodeT>;
 }
-export declare class Literal extends BaseTerm<LiteralT> implements RDF.Literal {
+export declare class Literal extends BaseTerm<LiteralT> implements RDF.Literal, TermT<LiteralT> {
+    constructor(value: string, languageOrDataType: RDF.NamedNode | string | null);
     get termType(): LiteralT;
     get value(): string;
+    get term(): string;
     get language(): string;
     get datatype(): NamedNode;
     get datatypeString(): string;
-    equals(term: RDF.Term): boolean;
-    toJSON(): {
-        termType: "Literal";
-        value: string;
-        language: string;
-        datatype: {
-            termType: string;
-            value: string;
-        };
-    };
+    equals(term?: null | Term): boolean;
+    toJSON(): TermT<LiteralT>;
 }
-export declare class BlankNode extends BaseTerm<BlankNodeT> implements RDF.BlankNode {
+export declare class BlankNode extends BaseTerm<BlankNodeT> implements RDF.BlankNode, TermT<BlankNodeT> {
     constructor(name: string);
     get termType(): BlankNodeT;
     get value(): string;
+    toJSON(): TermT<BlankNodeT>;
 }
-export declare class Variable extends BaseTerm<VariableT> implements RDF.Variable {
+export declare class Variable extends BaseTerm<VariableT> implements RDF.Variable, TermT<VariableT> {
     constructor(name: string);
     get termType(): VariableT;
     get value(): string;
+    toJSON(): TermT<VariableT>;
 }
-export declare class DefaultGraph extends BaseTerm<DefaultGraphT> implements RDF.DefaultGraph {
+export declare class DefaultGraph extends BaseTerm<DefaultGraphT> implements RDF.DefaultGraph, TermT<DefaultGraphT> {
     constructor();
     get value(): "";
     get termType(): DefaultGraphT;
+    toJSON(): TermT<DefaultGraphT>;
 }
 export declare const Default: DefaultGraph;
-export declare function fromId(id: string, factory?: RDF.DataFactory): RDF.Term;
-export declare function toId(term: string | RDF.Term): string;
-export declare class Quad {
-    readonly subject: NamedNode | BlankNode | Variable;
-    readonly predicate: NamedNode | Variable;
-    readonly object: NamedNode | BlankNode | Literal | Variable;
-    readonly graph: NamedNode | BlankNode | DefaultGraph | Variable;
-    constructor(subject: NamedNode | BlankNode | Variable, predicate: NamedNode | Variable, object: NamedNode | BlankNode | Literal | Variable, graph?: NamedNode | BlankNode | DefaultGraph | Variable);
-    toJSON(): {
-        subject: {
-            termType: "NamedNode";
-            value: string;
-        } | {
-            termType: "BlankNode";
-            value: string;
-        } | {
-            termType: "Variable";
-            value: string;
-        };
-        predicate: {
-            termType: "NamedNode";
-            value: string;
-        } | {
-            termType: "Variable";
-            value: string;
-        };
-        object: {
-            termType: "NamedNode";
-            value: string;
-        } | {
-            termType: "BlankNode";
-            value: string;
-        } | {
-            termType: "Variable";
-            value: string;
-        } | {
-            termType: "Literal";
-            value: string;
-            language: string;
-            datatype: {
-                termType: string;
-                value: string;
-            };
-        };
-        graph: {
-            termType: "NamedNode";
-            value: string;
-        } | {
-            termType: "BlankNode";
-            value: string;
-        } | {
-            termType: "Variable";
-            value: string;
-        } | {
-            termType: "DefaultGraph";
-            value: string;
-        };
-    };
-    equals(quad?: RDF.Quad): boolean;
+export declare function fromId(id: string): NamedNode | Literal | BlankNode | Variable | DefaultGraph;
+export declare function toId(term: string | Term): string;
+export interface D extends DataModel {
+    NamedNode: NamedNode;
+    BlankNode: BlankNode;
+    Literal: Literal;
+    DefaultGraph: DefaultGraph;
+    Variable: Variable;
+    Quad: Quad;
 }
+export declare class Quad implements RDF.Quad, QuadT<D> {
+    readonly subject: Subject<D>;
+    readonly predicate: Predicate<D>;
+    readonly object: Object<D>;
+    readonly [0]: Subject<D>;
+    readonly [1]: Predicate<D>;
+    readonly [2]: Object<D>;
+    readonly [3]: Graph<D>;
+    readonly graph: Graph<D>;
+    constructor(subject: Subject<D>, predicate: Predicate<D>, object: Object<D>, graph?: Graph<D>);
+    toJSON(): QuadT;
+    equals(quad?: null | BaseQuad): boolean;
+}
+export declare function getTerm(term: null | string | Term): null | NamedNode | BlankNode | Literal | Variable | DefaultGraph;
 declare const DataFactory: RDF.DataFactory;
 export default DataFactory;

@@ -22,6 +22,6 @@
 	},
 	"homepage": "https://github.com/underlay/n3.ts#readme",
 	"dependencies": {
-		"@types/rdf-js": "^3.0.0"
+		"@types/rdf-js": "^3.0.3"
 	}
 }

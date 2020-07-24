@@ -5,6 +5,8 @@ declare const _default: {
         double: "http://www.w3.org/2001/XMLSchema#double";
         integer: "http://www.w3.org/2001/XMLSchema#integer";
         string: "http://www.w3.org/2001/XMLSchema#string";
+        date: "http://www.w3.org/2001/XMLSchema#date";
+        dateTime: "http://www.w3.org/2001/XMLSchema#dateTime";
     };
     rdf: {
         type: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
