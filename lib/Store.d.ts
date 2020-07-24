@@ -10,7 +10,12 @@ declare const POS: POS;
 declare const OSP: OSP;
 declare type Index = Map<number, Map<number, Set<number>>>;
 export default class Store {
-    #private;
+    private id;
+    private ids;
+    private entities;
+    private sizeCache;
+    private graphMap;
+    private blankNodeIndex;
     constructor(quads?: QuadT[]);
     [Symbol.iterator](): Iterator<Quad>;
     get size(): number;

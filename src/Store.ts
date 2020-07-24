@@ -28,25 +28,25 @@ type GraphIndex = Readonly<{
 
 // ## Constructor
 export default class Store {
-	#id: number
-	#ids: Map<string, number>
-	#entities: Map<number, string>
-	#size: number | null
-	#graphs: Map<string, GraphIndex>
-	#blankNodeIndex: number
+	private id: number
+	private ids: Map<string, number>
+	private entities: Map<number, string>
+	private sizeCache: number | null
+	private graphMap: Map<string, GraphIndex>
+	private blankNodeIndex: number
 	constructor(quads?: QuadT[]) {
 		// The number of quads is initially zero
-		this.#size = 0
+		this.sizeCache = 0
 		// `#graphs` contains subject, predicate, and object indexes per graph
 		// this.#graphs = Object.create(null)
-		this.#graphs = new Map()
+		this.graphMap = new Map()
 		// `#ids` maps entities such as `http://xmlns.com/foaf/0.1/name` to numbers,
 		// saving memory by using only numbers as keys in `#graphs`
-		this.#id = 0
-		this.#ids = new Map([["><", 0]]) // dummy entry, so the first actual key is non-zero
-		this.#entities = new Map() // inverse of `#ids`
+		this.id = 0
+		this.ids = new Map([["><", 0]]) // dummy entry, so the first actual key is non-zero
+		this.entities = new Map() // inverse of `#ids`
 		// `#blankNodeIndex` is the index of the last automatically named blank node
-		this.#blankNodeIndex = 0
+		this.blankNodeIndex = 0
 
 		// Add quads if passed
 		if (Array.isArray(quads) && quads.length > 0) {
@@ -61,13 +61,13 @@ export default class Store {
 	// ### `size` returns the number of quads in the store
 	get size() {
 		// Return the quad count if if was cached
-		if (this.#size !== null) {
-			return this.#size
+		if (this.sizeCache !== null) {
+			return this.sizeCache
 		}
 
 		// Calculate the number of quads by counting to the deepest level
 		let size = 0
-		for (const { subjects } of this.#graphs.values()) {
+		for (const { subjects } of this.graphMap.values()) {
 			for (const predicates of subjects.values()) {
 				for (const objects of predicates.values()) {
 					size += objects.size
@@ -75,7 +75,7 @@ export default class Store {
 			}
 		}
 
-		this.#size = size
+		this.sizeCache = size
 		return size
 	}
 
@@ -136,7 +136,7 @@ export default class Store {
 		if (key0) {
 			const index1 = index0.get(key0)
 			if (index1 !== undefined) {
-				entities[0] = this.#entities.get(key0)!
+				entities[0] = this.entities.get(key0)!
 				yield* this.generateIndex1(
 					entities,
 					index1,
@@ -148,7 +148,7 @@ export default class Store {
 			}
 		} else {
 			for (const [value0, index1] of index0) {
-				entities[0] = this.#entities.get(value0)!
+				entities[0] = this.entities.get(value0)!
 				yield* this.generateIndex1(
 					entities,
 					index1,
@@ -172,12 +172,12 @@ export default class Store {
 		if (key1) {
 			const index2 = index1.get(key1)
 			if (index2 !== undefined) {
-				e[1] = this.#entities.get(key1)!
+				e[1] = this.entities.get(key1)!
 				yield* this.generateIndex2(e, key2, index2, r, graph)
 			}
 		} else {
 			for (const [value1, index2] of index1) {
-				e[1] = this.#entities.get(value1)!
+				e[1] = this.entities.get(value1)!
 				yield* this.generateIndex2(e, key2, index2, r, graph)
 			}
 		}
@@ -192,12 +192,12 @@ export default class Store {
 	): Generator<Quad, void> {
 		if (key2) {
 			if (index2.has(key2)) {
-				e[2] = this.#entities.get(key2)!
+				e[2] = this.entities.get(key2)!
 				yield this.makeQuad(e, r, graph)
 			}
 		} else {
 			for (const value2 of index2) {
-				e[2] = this.#entities.get(value2)!
+				e[2] = this.entities.get(value2)!
 				yield this.makeQuad(e, r, graph)
 			}
 		}
@@ -306,15 +306,15 @@ export default class Store {
 	// or all graphs if the argument is null or undefined.
 	private getGraphIndices(graph: string | null): Map<string, GraphIndex> {
 		if (graph === undefined || graph === null) {
-			return this.#graphs
+			return this.graphMap
 		} else {
-			const graphIndex = this.#graphs.get(graph)!
+			const graphIndex = this.graphMap.get(graph)!
 			return new Map([[graph, graphIndex]])
 		}
 	}
 
 	private getGraphIndex(graph: string): GraphIndex {
-		const graphIndex = this.#graphs.get(graph)
+		const graphIndex = this.graphMap.get(graph)
 		if (graphIndex !== undefined) {
 			return graphIndex
 		}
@@ -323,7 +323,7 @@ export default class Store {
 			predicates: new Map(),
 			objects: new Map(),
 		})
-		this.#graphs.set(graph, newGraphIndex)
+		this.graphMap.set(graph, newGraphIndex)
 		return newGraphIndex
 	}
 
@@ -361,31 +361,31 @@ export default class Store {
 		// Since entities can often be long IRIs, we avoid storing them in every index.
 		// Instead, we have a separate index that maps entities to numbers,
 		// which are then used as keys in the other indexes.
-		if (!this.#ids.has(subject)) {
-			const id = ++this.#id
-			this.#entities.set(id, subject)
-			this.#ids.set(subject, id)
+		if (!this.ids.has(subject)) {
+			const id = ++this.id
+			this.entities.set(id, subject)
+			this.ids.set(subject, id)
 		}
-		const s = this.#ids.get(subject)!
-		if (!this.#ids.has(predicate)) {
-			const id = ++this.#id
-			this.#entities.set(id, predicate)
-			this.#ids.set(predicate, id)
+		const s = this.ids.get(subject)!
+		if (!this.ids.has(predicate)) {
+			const id = ++this.id
+			this.entities.set(id, predicate)
+			this.ids.set(predicate, id)
 		}
-		const p = this.#ids.get(predicate)!
-		if (!this.#ids.has(object)) {
-			const id = ++this.#id
-			this.#entities.set(id, object)
-			this.#ids.set(object, id)
+		const p = this.ids.get(predicate)!
+		if (!this.ids.has(object)) {
+			const id = ++this.id
+			this.entities.set(id, object)
+			this.ids.set(object, id)
 		}
-		const o = this.#ids.get(object)!
+		const o = this.ids.get(object)!
 
 		const changed = this.addToIndex(graphIndex.subjects, s, p, o)
 		this.addToIndex(graphIndex.predicates, p, o, s)
 		this.addToIndex(graphIndex.objects, o, s, p)
 
 		// The cached quad count is now invalid
-		this.#size = null
+		this.sizeCache = null
 		return changed
 	}
 
@@ -425,23 +425,23 @@ export default class Store {
 
 		// Find internal identifiers for all components
 		// and verify the quad exists.
-		const index = this.#graphs.get(graph)
+		const index = this.graphMap.get(graph)
 		if (index === undefined) {
 			return false
 		}
 
 		if (
-			!this.#ids.has(subject) ||
-			!this.#ids.has(predicate) ||
-			!this.#ids.has(object)
+			!this.ids.has(subject) ||
+			!this.ids.has(predicate) ||
+			!this.ids.has(object)
 		) {
 			return false
 		}
 
 		const [s, p, o] = [
-			this.#ids.get(subject)!,
-			this.#ids.get(predicate)!,
-			this.#ids.get(object)!,
+			this.ids.get(subject)!,
+			this.ids.get(predicate)!,
+			this.ids.get(object)!,
 		]
 
 		const subjects = index.subjects.get(s)
@@ -458,12 +458,12 @@ export default class Store {
 		this.removeFromIndex(index.subjects, s, p, o)
 		this.removeFromIndex(index.predicates, p, o, s)
 		this.removeFromIndex(index.objects, o, s, p)
-		if (this.#size !== null) {
-			this.#size--
+		if (this.sizeCache !== null) {
+			this.sizeCache--
 		}
 
 		if (index.subjects.size === 0) {
-			this.#graphs.delete(graph)
+			this.graphMap.delete(graph)
 		}
 
 		return true
@@ -494,7 +494,7 @@ export default class Store {
 
 	private getGraphId(graph: Term | string): string | undefined {
 		const graphId = toId(graph)
-		if (this.#graphs.has(graphId)) {
+		if (this.graphMap.has(graphId)) {
 			return graphId
 		} else {
 			return undefined
@@ -514,9 +514,9 @@ export default class Store {
 		string | null | undefined
 	] {
 		return [
-			s === null ? null : this.#ids.get(toId(s)),
-			p === null ? null : this.#ids.get(toId(p)),
-			o === null ? null : this.#ids.get(toId(o)),
+			s === null ? null : this.ids.get(toId(s)),
+			p === null ? null : this.ids.get(toId(p)),
+			o === null ? null : this.ids.get(toId(o)),
 			graph === null ? null : this.getGraphId(graph),
 		]
 	}
@@ -783,7 +783,7 @@ export default class Store {
 			return
 		}
 
-		for (const g of this.#graphs.keys()) {
+		for (const g of this.graphMap.keys()) {
 			const graph = fromId(g) as Graph<D>
 			for (const _ of this.q(s, p, o, g)) {
 				yield graph
@@ -798,7 +798,7 @@ export default class Store {
 	): Generator<D[TermType], void, unknown> {
 		if (!ids.has(id)) {
 			ids.add(id)
-			yield fromId(this.#entities.get(id)!)
+			yield fromId(this.entities.get(id)!)
 		}
 	}
 
@@ -807,19 +807,19 @@ export default class Store {
 		if (suggestedName) {
 			// Generate a name based on the suggested name
 			name = "_:" + suggestedName
-			for (let index = 1; this.#ids.has(name); index++) {
+			for (let index = 1; this.ids.has(name); index++) {
 				name = "_:" + suggestedName + index
 			}
 		} else {
 			// Generate a generic blank node name
 			do {
-				name = "_:b" + this.#blankNodeIndex++
-			} while (this.#ids.has(name))
+				name = "_:b" + this.blankNodeIndex++
+			} while (this.ids.has(name))
 		}
 		// Add the blank node to the entities, avoiding the generation of duplicates
-		const id = ++this.#id
-		this.#ids.set(name, id)
-		this.#entities.set(id, name)
+		const id = ++this.id
+		this.ids.set(name, id)
+		this.entities.set(id, name)
 		return DataFactory.blankNode(name.substr(2))
 	}
 }
