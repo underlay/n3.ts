@@ -234,9 +234,16 @@ export default function* Parse(
 			rightBoundary = line.indexOf(nnClosingPostfix, leftBoundary)
 			if (rightBoundary === -1) {
 				throw nnClosingTagError()
+			} else if (
+				line.substring(
+					rightBoundary,
+					rightBoundary + nnClosingPostfixOffset
+				) !== nnClosingPostfix
+			) {
+				throw nnClosingTagError()
 			}
 			const value = line.substring(leftBoundary, rightBoundary)
-			leftBoundary = rightBoundary
+			leftBoundary = rightBoundary + nnClosingPostfixOffset
 			graph = new NamedNode(value)
 		} else if (line[leftBoundary] === bnOpeningToken) {
 			if (
