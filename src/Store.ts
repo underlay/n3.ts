@@ -34,7 +34,7 @@ export default class Store {
 	private sizeCache: number | null
 	private graphMap: Map<string, GraphIndex>
 	private blankNodeIndex: number
-	constructor(quads?: QuadT[]) {
+	constructor(quads?: Iterable<QuadT>) {
 		// The number of quads is initially zero
 		this.sizeCache = 0
 		// `#graphs` contains subject, predicate, and object indexes per graph
@@ -49,7 +49,7 @@ export default class Store {
 		this.blankNodeIndex = 0
 
 		// Add quads if passed
-		if (Array.isArray(quads) && quads.length > 0) {
+		if (quads !== undefined) {
 			this.addQuads(quads)
 		}
 	}
@@ -390,7 +390,7 @@ export default class Store {
 	}
 
 	// ### `addQuads` adds multiple quads to the store
-	public addQuads(quads: QuadT[]) {
+	public addQuads(quads: Iterable<QuadT>) {
 		for (const quad of quads) {
 			this.addQuad(quad)
 		}

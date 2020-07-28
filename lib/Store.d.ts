@@ -16,7 +16,7 @@ export default class Store {
     private sizeCache;
     private graphMap;
     private blankNodeIndex;
-    constructor(quads?: QuadT[]);
+    constructor(quads?: Iterable<QuadT>);
     [Symbol.iterator](): Iterator<Quad>;
     get size(): number;
     private addToIndex;
@@ -34,7 +34,7 @@ export default class Store {
     private getGraphIndex;
     addQuad(quad: QuadT): void;
     addQuad(subject: Term, predicate: Term, object: Term, graph?: Term): void;
-    addQuads(quads: QuadT[]): void;
+    addQuads(quads: Iterable<QuadT>): void;
     removeQuad(quad: RDF.Quad): boolean;
     removeQuad(subject: RDF.Term, predicate: RDF.Term, object: RDF.Term, graph?: RDF.Term): boolean;
     remove(stream: IterableIterator<RDF.Quad>): void;
