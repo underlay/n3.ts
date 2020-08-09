@@ -14,6 +14,8 @@ import {
 	Graph,
 	QuadT,
 	BaseQuad,
+	Terms,
+	DataModel,
 } from "./rdf.js"
 import DataFactory, {
 	toId,
@@ -25,11 +27,15 @@ import DataFactory, {
 	DefaultGraph,
 	Variable,
 	Quad,
+	D,
 } from "./DataFactory.js"
 import Store from "./Store.js"
 import Parse from "./Parse.js"
 
 export {
+	Terms,
+	D,
+	DataModel,
 	Parse,
 	IRIs,
 	DataFactory,

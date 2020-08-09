@@ -14,7 +14,7 @@ export declare type TermT<T extends TermType> = {
         value: string;
     };
 } : {});
-interface Terms<N extends TermT<NamedNodeT> = TermT<NamedNodeT>, B extends TermT<BlankNodeT> = TermT<BlankNodeT>, L extends TermT<LiteralT> = TermT<LiteralT>, D extends TermT<DefaultGraphT> = TermT<DefaultGraphT>, V extends TermT<VariableT> = TermT<VariableT>> {
+export interface Terms<N extends TermT<NamedNodeT> = TermT<NamedNodeT>, B extends TermT<BlankNodeT> = TermT<BlankNodeT>, L extends TermT<LiteralT> = TermT<LiteralT>, D extends TermT<DefaultGraphT> = TermT<DefaultGraphT>, V extends TermT<VariableT> = TermT<VariableT>> {
     NamedNode: N;
     BlankNode: B;
     Literal: L;
@@ -41,4 +41,3 @@ export declare type QuadT<T extends Terms = Terms> = {
 export interface DataModel<T extends Terms = Terms, Q extends QuadT<T> = QuadT<T>> extends Terms<T["NamedNode"], T["BlankNode"], T["Literal"], T["DefaultGraph"], T["Variable"]> {
     Quad: Q;
 }
-export {};

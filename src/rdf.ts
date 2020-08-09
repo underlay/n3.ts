@@ -18,7 +18,7 @@ export type TermT<T extends TermType> = {
 	? { language: string; datatype: { termType: NamedNodeT; value: string } }
 	: {})
 
-interface Terms<
+export interface Terms<
 	N extends TermT<NamedNodeT> = TermT<NamedNodeT>,
 	B extends TermT<BlankNodeT> = TermT<BlankNodeT>,
 	L extends TermT<LiteralT> = TermT<LiteralT>,
