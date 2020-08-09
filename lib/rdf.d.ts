@@ -4,7 +4,7 @@ export declare type BlankNodeT = "BlankNode";
 export declare type DefaultGraphT = "DefaultGraph";
 export declare type VariableT = "Variable";
 export declare type TermType = NamedNodeT | LiteralT | BlankNodeT | DefaultGraphT | VariableT;
-export declare type TermT<T extends TermType> = {
+export declare type TermT<T extends TermType = TermType> = {
     termType: T;
     value: [T] extends [DefaultGraphT] ? "" : string;
 } & ([T] extends [LiteralT] ? {

@@ -11,7 +11,7 @@ export type TermType =
 	| DefaultGraphT
 	| VariableT
 
-export type TermT<T extends TermType> = {
+export type TermT<T extends TermType = TermType> = {
 	termType: T
 	value: [T] extends [DefaultGraphT] ? "" : string
 } & ([T] extends [LiteralT]
