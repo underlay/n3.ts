@@ -11,19 +11,12 @@ export type TermType =
 	| DefaultGraphT
 	| VariableT
 
-export type TermT<T extends TermType = TermType> = {
+export type TermT<T extends TermType> = {
 	termType: T
 	value: [T] extends [DefaultGraphT] ? "" : string
 } & ([T] extends [LiteralT]
 	? { language: string; datatype: { termType: NamedNodeT; value: string } }
 	: {})
-
-export type Term =
-	| TermT<NamedNodeT>
-	| TermT<BlankNodeT>
-	| TermT<LiteralT>
-	| TermT<DefaultGraphT>
-	| TermT<VariableT>
 
 interface Terms<
 	N extends TermT<NamedNodeT> = TermT<NamedNodeT>,
@@ -38,6 +31,13 @@ interface Terms<
 	DefaultGraph: D
 	Variable: V
 }
+
+export type Term<T extends Terms = Terms> =
+	| T["NamedNode"]
+	| T["BlankNode"]
+	| T["Literal"]
+	| T["DefaultGraph"]
+	| T["Variable"]
 
 export type Subject<T extends Terms = Terms> =
 	| T["NamedNode"]

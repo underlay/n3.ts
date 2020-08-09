@@ -4,7 +4,7 @@ export declare type BlankNodeT = "BlankNode";
 export declare type DefaultGraphT = "DefaultGraph";
 export declare type VariableT = "Variable";
 export declare type TermType = NamedNodeT | LiteralT | BlankNodeT | DefaultGraphT | VariableT;
-export declare type TermT<T extends TermType = TermType> = {
+export declare type TermT<T extends TermType> = {
     termType: T;
     value: [T] extends [DefaultGraphT] ? "" : string;
 } & ([T] extends [LiteralT] ? {
@@ -14,7 +14,6 @@ export declare type TermT<T extends TermType = TermType> = {
         value: string;
     };
 } : {});
-export declare type Term = TermT<NamedNodeT> | TermT<BlankNodeT> | TermT<LiteralT> | TermT<DefaultGraphT> | TermT<VariableT>;
 interface Terms<N extends TermT<NamedNodeT> = TermT<NamedNodeT>, B extends TermT<BlankNodeT> = TermT<BlankNodeT>, L extends TermT<LiteralT> = TermT<LiteralT>, D extends TermT<DefaultGraphT> = TermT<DefaultGraphT>, V extends TermT<VariableT> = TermT<VariableT>> {
     NamedNode: N;
     BlankNode: B;
@@ -22,6 +21,7 @@ interface Terms<N extends TermT<NamedNodeT> = TermT<NamedNodeT>, B extends TermT
     DefaultGraph: D;
     Variable: V;
 }
+export declare type Term<T extends Terms = Terms> = T["NamedNode"] | T["BlankNode"] | T["Literal"] | T["DefaultGraph"] | T["Variable"];
 export declare type Subject<T extends Terms = Terms> = T["NamedNode"] | T["BlankNode"] | T["Variable"];
 export declare type Predicate<T extends Terms = Terms> = T["NamedNode"] | T["Variable"];
 export declare type Object<T extends Terms = Terms> = T["NamedNode"] | T["BlankNode"] | T["Literal"] | T["Variable"];
