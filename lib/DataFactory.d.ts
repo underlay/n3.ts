@@ -54,6 +54,15 @@ export interface D extends DataModel {
     Variable: Variable;
     Quad: Quad;
 }
+export declare class Q extends Array<Term<D>> implements RDF.Quad, QuadT<D> {
+    readonly subject: Subject<D>;
+    readonly predicate: Predicate<D>;
+    readonly object: Object<D>;
+    readonly graph: Graph<D>;
+    constructor(subject: Subject<D>, predicate: Predicate<D>, object: Object<D>, graph?: Graph<D>);
+    toJSON(): QuadT;
+    equals(quad?: null | BaseQuad): boolean;
+}
 export declare class Quad implements RDF.Quad, QuadT<D> {
     readonly subject: Subject<D>;
     readonly predicate: Predicate<D>;

@@ -305,6 +305,42 @@ export interface D extends DataModel {
 	Quad: Quad
 }
 
+// TODO: think about it
+export class Q extends Array<Term<D>> implements RDF.Quad, QuadT<D> {
+	public readonly graph: Graph<D>
+	constructor(
+		public readonly subject: Subject<D>,
+		public readonly predicate: Predicate<D>,
+		public readonly object: Object<D>,
+		graph?: Graph<D>
+	) {
+		super(subject, predicate, object, graph || Default)
+		this.graph = graph || Default
+	}
+
+	public toJSON(): QuadT {
+		return {
+			subject: this.subject.toJSON(),
+			predicate: this.predicate.toJSON(),
+			object: this.object.toJSON(),
+			graph: this.graph.toJSON(),
+		}
+	}
+
+	public equals(quad?: null | BaseQuad): boolean {
+		if (quad === undefined || quad === null) {
+			return false
+		} else {
+			return (
+				this.subject.equals(quad.subject) &&
+				this.predicate.equals(quad.predicate) &&
+				this.object.equals(quad.object) &&
+				this.graph.equals(quad.graph)
+			)
+		}
+	}
+}
+
 // ## Quad constructor
 export class Quad implements RDF.Quad, QuadT<D> {
 	public readonly [0]: Subject<D>
