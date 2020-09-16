@@ -11,21 +11,20 @@ const rdfLangString = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
 const xsdDate = "http://www.w3.org/2001/XMLSchema#date"
 const xsdDateTime = "http://www.w3.org/2001/XMLSchema#dateTime"
 
-export default {
-	xsd: {
-		decimal: xsdDecimal as typeof xsdDecimal,
-		boolean: xsdBoolean as typeof xsdBoolean,
-		double: xsdDouble as typeof xsdDouble,
-		integer: xsdInteger as typeof xsdInteger,
-		string: xsdString as typeof xsdString,
-		date: xsdDate as typeof xsdDate,
-		dateTime: xsdDateTime as typeof xsdDateTime,
-	},
-	rdf: {
-		type: rdfType as typeof rdfType,
-		nil: rdfNil as typeof rdfNil,
-		first: rdfFirst as typeof rdfFirst,
-		rest: rdfRest as typeof rdfRest,
-		langString: rdfLangString as typeof rdfLangString,
-	},
+export const xsd = {
+	decimal: xsdDecimal as typeof xsdDecimal,
+	boolean: xsdBoolean as typeof xsdBoolean,
+	double: xsdDouble as typeof xsdDouble,
+	integer: xsdInteger as typeof xsdInteger,
+	string: xsdString as typeof xsdString,
+	date: xsdDate as typeof xsdDate,
+	dateTime: xsdDateTime as typeof xsdDateTime,
+}
+
+export const rdf = {
+	type: rdfType as typeof rdfType,
+	nil: rdfNil as typeof rdfNil,
+	first: rdfFirst as typeof rdfFirst,
+	rest: rdfRest as typeof rdfRest,
+	langString: rdfLangString as typeof rdfLangString,
 }

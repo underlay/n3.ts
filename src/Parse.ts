@@ -6,7 +6,7 @@ import {
 	Default,
 	D,
 } from "./DataFactory.js"
-import { Subject, Predicate, Object, Graph } from "./rdf.js"
+import { Subject, Predicate, Object, Graph } from "./DataModel.js"
 
 const nnClosingTagError = () =>
 	new Error(`named node without closing angle bracket`)

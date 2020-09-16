@@ -1,62 +1,31 @@
 import * as RDF from "rdf-js"
+import * as DataModel from "./DataModel.js"
 
-import {
-	Term,
-	TermT,
-	QuadT,
-	NamedNodeT,
-	BlankNodeT,
-	LiteralT,
-	DefaultGraphT,
-	VariableT,
-	DataModel,
-	TermType,
-	Subject,
-	Predicate,
-	Object,
-	Graph,
-	BaseQuad,
-} from "./rdf.js"
-
-import iris from "./IRIs.js"
-
-const { rdf, xsd } = iris
+import { rdf, xsd } from "./IRIs.js"
 
 let _blankNodeCounter = 0
 
-abstract class BaseTerm<T extends TermType> {
-	abstract get termType(): T
-	abstract get value(): [T] extends [DefaultGraphT] ? "" : string
-	constructor(readonly id: string) {}
+export class NamedNode<Iri extends string = string>
+	implements RDF.NamedNode, DataModel.NamedNode {
+	constructor(readonly value: Iri) {}
 
-	abstract toJSON(): TermT<T>
-
-	equals(term?: null | Term): boolean {
-		if (term === undefined || term === null) {
-			return false
-		} else if (term instanceof BaseTerm) {
-			return this.id === term.id
-		} else {
-			return this.termType === term.termType && this.value === term.value
-		}
-	}
-}
-
-export class NamedNode extends BaseTerm<NamedNodeT>
-	implements RDF.NamedNode, TermT<NamedNodeT> {
-	constructor(value: string) {
-		super(`<${value}>`)
-	}
-
-	get termType(): NamedNodeT {
+	get termType(): DataModel.NamedNodeT {
 		return "NamedNode"
 	}
 
-	get value(): string {
-		return this.id.slice(1, -1)
+	get id(): string {
+		return `<${this.value}>`
 	}
 
-	toJSON(): TermT<NamedNodeT> {
+	equals(other?: null | RDF.Term) {
+		if (other === undefined || other === null) {
+			return false
+		} else {
+			return other.termType === "NamedNode" && other.value === this.value
+		}
+	}
+
+	toJSON(): DataModel.NamedNode {
 		return {
 			termType: this.termType,
 			value: this.value,
@@ -67,113 +36,84 @@ export class NamedNode extends BaseTerm<NamedNodeT>
 const xsdString = new NamedNode(xsd.string)
 const rdfLangString = new NamedNode(rdf.langString)
 
-export class Literal extends BaseTerm<LiteralT>
-	implements RDF.Literal, TermT<LiteralT> {
+export class Literal implements RDF.Literal, DataModel.Literal {
+	readonly id: string
+	readonly language: string
+	readonly datatype: NamedNode
 	constructor(
-		value: string,
-		languageOrDataType: RDF.NamedNode | string | null
+		readonly value: string,
+		languageOrDataType?: null | string | DataModel.NamedNode
 	) {
 		if (typeof languageOrDataType === "string") {
-			super(`"${value}"@${languageOrDataType.toLowerCase()}`)
+			this.language = languageOrDataType.toLowerCase()
+			this.id = `"${value}"@${this.language}`
+			this.datatype = rdfLangString
 		} else if (
 			languageOrDataType === null ||
+			languageOrDataType === undefined ||
 			languageOrDataType.value === xsd.string
 		) {
-			super(`"${value}"`)
+			this.id = `"${value}"`
+			this.language = ""
+			this.datatype = xsdString
 		} else {
-			super(`"${value}"^^<${languageOrDataType.value}>`)
+			this.id = `"${value}"^^<${languageOrDataType.value}>`
+			this.language = ""
+			if (languageOrDataType instanceof NamedNode) {
+				this.datatype = languageOrDataType
+			} else {
+				this.datatype = new NamedNode(languageOrDataType.value)
+			}
 		}
 	}
 
-	get termType(): LiteralT {
+	get termType(): DataModel.LiteralT {
 		return "Literal"
 	}
 
-	get value(): string {
-		return this.id.substring(1, this.id.lastIndexOf('"'))
-	}
-
-	get term(): string {
-		return `<${this.id}>`
-	}
-
-	get language() {
-		const i = this.id.lastIndexOf('"') + 1
-		return this.id[i] === "@" ? this.id.slice(i + 1) : ""
-	}
-
-	get datatype(): NamedNode {
-		const i = this.id.lastIndexOf('"') + 1
-		if (this.id.length === i) {
-			return xsdString
-		} else if (this.id[i] === "@") {
-			return rdfLangString
-		} else if (
-			this.id.slice(i, i + 3) === "^^<" &&
-			this.id[this.id.length - 1] === ">"
-		) {
-			return new NamedNode(this.id.slice(i + 3, -1))
-		} else {
-			throw new Error(`Invalid literal id ${this.id}`)
-		}
-	}
-
-	get datatypeString(): string {
-		const i = this.id.lastIndexOf('"') + 1
-		if (this.id.length === i) {
-			return xsd.string
-		} else if (this.id[i] === "@") {
-			return rdf.langString
-		} else if (
-			this.id.slice(i, i + 3) === "^^<" &&
-			this.id[this.id.length - 1] === ">"
-		) {
-			return this.id.slice(i + 3, -1)
-		} else {
-			throw new Error(`Invalid literal id ${this.id}`)
-		}
-	}
-
-	equals(term?: null | Term): boolean {
+	equals(term?: null | RDF.Term): boolean {
 		if (term === null || term === undefined) {
 			return false
-		} else if (term instanceof Literal) {
-			return this.id === term.id
 		} else {
 			return (
 				this.termType === term.termType &&
 				this.value === term.value &&
 				this.language === term.language &&
-				this.datatypeString === term.datatype.value
+				this.datatype.equals(term.datatype)
 			)
 		}
 	}
 
-	toJSON(): TermT<LiteralT> {
+	toJSON(): DataModel.Literal {
 		return {
 			termType: this.termType,
 			value: this.value,
 			language: this.language,
-			datatype: { termType: "NamedNode", value: this.datatypeString },
+			datatype: { termType: "NamedNode", value: this.datatype.value },
 		}
 	}
 }
 
-export class BlankNode extends BaseTerm<BlankNodeT>
-	implements RDF.BlankNode, TermT<BlankNodeT> {
-	constructor(name: string) {
-		super("_:" + name)
+export class BlankNode implements RDF.BlankNode, DataModel.BlankNode {
+	constructor(readonly value: string) {}
+
+	get id(): string {
+		return `_:${this.value}`
 	}
 
-	get termType(): BlankNodeT {
+	get termType(): DataModel.BlankNodeT {
 		return "BlankNode"
 	}
 
-	get value() {
-		return this.id.substr(2)
+	equals(term?: null | RDF.Term): boolean {
+		if (term === null || term === undefined) {
+			return false
+		} else {
+			return this.termType === term.termType && term.value === this.value
+		}
 	}
 
-	toJSON(): TermT<BlankNodeT> {
+	toJSON(): DataModel.BlankNode {
 		return {
 			termType: this.termType,
 			value: this.value,
@@ -181,21 +121,25 @@ export class BlankNode extends BaseTerm<BlankNodeT>
 	}
 }
 
-export class Variable extends BaseTerm<VariableT>
-	implements RDF.Variable, TermT<VariableT> {
-	constructor(name: string) {
-		super("?" + name)
+export class Variable implements RDF.Variable, DataModel.Variable {
+	constructor(readonly value: string) {}
+	get id() {
+		return `?${this.value}`
 	}
 
-	get termType(): VariableT {
+	get termType(): DataModel.VariableT {
 		return "Variable"
 	}
 
-	get value() {
-		return this.id.slice(1)
+	equals(term?: null | RDF.Term): boolean {
+		if (term === null || term === undefined) {
+			return false
+		} else {
+			return this.termType === term.termType && term.value === this.value
+		}
 	}
 
-	toJSON(): TermT<VariableT> {
+	toJSON(): DataModel.Variable {
 		return {
 			termType: this.termType,
 			value: this.value,
@@ -203,21 +147,28 @@ export class Variable extends BaseTerm<VariableT>
 	}
 }
 
-export class DefaultGraph extends BaseTerm<DefaultGraphT>
-	implements RDF.DefaultGraph, TermT<DefaultGraphT> {
-	constructor() {
-		super("")
+export class DefaultGraph implements RDF.DefaultGraph, DataModel.DefaultGraph {
+	get termType(): DataModel.DefaultGraphT {
+		return "DefaultGraph"
+	}
+
+	get id(): "" {
+		return ""
 	}
 
 	get value(): "" {
 		return ""
 	}
 
-	get termType(): DefaultGraphT {
-		return "DefaultGraph"
+	equals(term?: null | RDF.Term): boolean {
+		if (term === null || term === undefined) {
+			return false
+		} else {
+			return this.termType === term.termType
+		}
 	}
 
-	toJSON(): TermT<DefaultGraphT> {
+	toJSON(): DataModel.DefaultGraph {
 		return {
 			termType: this.termType,
 			value: "",
@@ -261,16 +212,10 @@ export function fromId(id: string) {
 	}
 }
 
-export function toId(term: string | Term): string {
+export function toId(term: string | DataModel.Term): string {
 	if (typeof term === "string") {
 		return term
-	} else if (term instanceof BaseTerm) {
-		return term.id
-	} else if (!term) {
-		return ""
 	}
-
-	// Term instantiated with another library
 	switch (term.termType) {
 		case "NamedNode":
 			return `<${term.value}>`
@@ -296,7 +241,7 @@ export function toId(term: string | Term): string {
 	}
 }
 
-export interface D extends DataModel {
+export interface D extends DataModel.DataModel {
 	NamedNode: NamedNode
 	BlankNode: BlankNode
 	Literal: Literal
@@ -306,20 +251,42 @@ export interface D extends DataModel {
 }
 
 // TODO: think about it
-export class Q extends Array<Term<D>> implements RDF.Quad, QuadT<D> {
-	public readonly graph: Graph<D>
+export class Quad
+	extends Array<
+		NamedNode | BlankNode | Literal | DefaultGraph | Variable | Quad
+	>
+	implements RDF.Quad, DataModel.Quad {
+	readonly graph: NamedNode | BlankNode | DefaultGraph | Variable
 	constructor(
-		public readonly subject: Subject<D>,
-		public readonly predicate: Predicate<D>,
-		public readonly object: Object<D>,
-		graph?: Graph<D>
+		public readonly subject: NamedNode | BlankNode | Variable | Quad,
+		public readonly predicate: NamedNode | Variable,
+		public readonly object: NamedNode | BlankNode | Literal | Variable,
+		graph?: NamedNode | BlankNode | DefaultGraph | Variable
 	) {
 		super(subject, predicate, object, graph || Default)
 		this.graph = graph || Default
 	}
 
-	public toJSON(): QuadT {
+	get termType(): DataModel.QuadT {
+		return "Quad"
+	}
+
+	get value(): "" {
+		return ""
+	}
+
+	get id(): string {
+		if (this.graph.equals(Default)) {
+			return `${this.subject.id} ${this.predicate.id} ${this.object.id} .`
+		} else {
+			return `${this.subject.id} ${this.predicate.id} ${this.object.id} ${this.graph.id} .`
+		}
+	}
+
+	toJSON(): DataModel.Quad {
 		return {
+			termType: "Quad",
+			value: "",
 			subject: this.subject.toJSON(),
 			predicate: this.predicate.toJSON(),
 			object: this.object.toJSON(),
@@ -327,80 +294,41 @@ export class Q extends Array<Term<D>> implements RDF.Quad, QuadT<D> {
 		}
 	}
 
-	public equals(quad?: null | BaseQuad): boolean {
-		if (quad === undefined || quad === null) {
+	equals(other?: null | RDF.Term): boolean {
+		if (other === undefined || other === null) {
 			return false
 		} else {
 			return (
-				this.subject.equals(quad.subject) &&
-				this.predicate.equals(quad.predicate) &&
-				this.object.equals(quad.object) &&
-				this.graph.equals(quad.graph)
+				other.termType === "Quad" &&
+				this.subject.equals(other.subject) &&
+				this.predicate.equals(other.predicate) &&
+				this.object.equals(other.object) &&
+				this.graph.equals(other.graph)
 			)
 		}
 	}
 }
 
-// ## Quad constructor
-export class Quad implements RDF.Quad, QuadT<D> {
-	public readonly [0]: Subject<D>
-	public readonly [1]: Predicate<D>
-	public readonly [2]: Object<D>
-	public readonly [3]: Graph<D>
-	public readonly graph: Graph<D>
-	constructor(
-		public readonly subject: Subject<D>,
-		public readonly predicate: Predicate<D>,
-		public readonly object: Object<D>,
-		graph?: Graph<D>
-	) {
-		this.graph = graph || Default
-		this[0] = this.subject
-		this[1] = this.predicate
-		this[2] = this.object
-		this[3] = this.graph
-	}
-
-	public toJSON(): QuadT {
-		return {
-			subject: this.subject.toJSON(),
-			predicate: this.predicate.toJSON(),
-			object: this.object.toJSON(),
-			graph: this.graph.toJSON(),
-		}
-	}
-
-	public equals(quad?: null | BaseQuad): boolean {
-		if (quad === undefined || quad === null) {
-			return false
-		} else {
-			return (
-				this.subject.equals(quad.subject) &&
-				this.predicate.equals(quad.predicate) &&
-				this.object.equals(quad.object) &&
-				this.graph.equals(quad.graph)
-			)
-		}
-	}
-}
-
-function namedNode(iri: string): NamedNode {
+function namedNode<Iri extends string>(iri: Iri): RDF.NamedNode<Iri> {
 	return new NamedNode(iri)
 }
 
-function blankNode(name: string): BlankNode {
+function blankNode(name: string): RDF.BlankNode {
 	return new BlankNode(name || `n4-${_blankNodeCounter++}`)
 }
 
-function literal(value: string, languageOrDataType?: string | NamedNode) {
+function literal(
+	value: string,
+	languageOrDataType?: string | NamedNode
+): RDF.Literal {
 	return new Literal(value, languageOrDataType || null)
 }
 
-function variable(name: string) {
+function variable(name: string): RDF.Variable {
 	return new Variable(name)
 }
 
-function defaultGraph() {
+function defaultGraph(): RDF.DefaultGraph {
 	return Default
 }
 
@@ -409,37 +337,37 @@ function quad(
 	predicate: NamedNode | Variable,
 	object: NamedNode | BlankNode | Literal | Variable,
 	graph?: NamedNode | BlankNode | DefaultGraph | Variable
-) {
+): RDF.Quad {
 	return new Quad(subject, predicate, object, graph)
 }
 
-export function getTerm(
-	term: null | string | Term
-): null | NamedNode | BlankNode | Literal | Variable | DefaultGraph {
-	if (term === null) {
-		return null
-	} else if (typeof term === "string") {
-		return fromId(term)
-	} else if (term instanceof BaseTerm) {
-		return term
-	} else {
-		switch (term.termType) {
-			case "NamedNode":
-				return new NamedNode(term.value)
-			case "BlankNode":
-				return new BlankNode(term.value)
-			case "Literal":
-				return new Literal(
-					term.value,
-					term.language || new NamedNode(term.datatype.value)
-				)
-			case "DefaultGraph":
-				return Default
-			case "Variable":
-				return new Variable(term.value)
-		}
-	}
-}
+// export function getTerm(
+// 	term: null | string | Term
+// ): null | NamedNode | BlankNode | Literal | Variable | DefaultGraph {
+// 	if (term === null) {
+// 		return null
+// 	} else if (typeof term === "string") {
+// 		return fromId(term)
+// 	} else if (term instanceof BaseTerm) {
+// 		return term
+// 	} else {
+// 		switch (term.termType) {
+// 			case "NamedNode":
+// 				return new NamedNode(term.value)
+// 			case "BlankNode":
+// 				return new BlankNode(term.value)
+// 			case "Literal":
+// 				return new Literal(
+// 					term.value,
+// 					term.language || new NamedNode(term.datatype.value)
+// 				)
+// 			case "DefaultGraph":
+// 				return Default
+// 			case "Variable":
+// 				return new Variable(term.value)
+// 		}
+// 	}
+// }
 
 const DataFactory: RDF.DataFactory = {
 	namedNode,
