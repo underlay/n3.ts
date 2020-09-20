@@ -1,6 +1,6 @@
 import { Quad, D } from "./DataFactory.js";
 import * as RDF from "rdf-js";
-import { Subject, Predicate, Object, Graph } from "DataModel.js";
+import { Subject, Predicate, Object, Graph } from "./DataModel.js";
 declare type Rotation = SPO | POS | OSP;
 declare type SPO = ["subject", "predicate", "object"];
 declare type POS = ["predicate", "object", "subject"];

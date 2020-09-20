@@ -15,6 +15,7 @@ export declare class Literal implements RDF.Literal, DataModel.Literal {
     readonly datatype: NamedNode;
     constructor(value: string, languageOrDataType?: null | string | DataModel.NamedNode);
     get termType(): DataModel.LiteralT;
+    get datatypeString(): string;
     equals(term?: null | RDF.Term): boolean;
     toJSON(): DataModel.Literal;
 }

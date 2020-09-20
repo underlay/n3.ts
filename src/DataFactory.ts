@@ -71,6 +71,10 @@ export class Literal implements RDF.Literal, DataModel.Literal {
 		return "Literal"
 	}
 
+	get datatypeString(): string {
+		return this.datatype.value
+	}
+
 	equals(term?: null | RDF.Term): boolean {
 		if (term === null || term === undefined) {
 			return false
