@@ -220,7 +220,10 @@ export default function* Parse(
 					datatype = xsdString
 					leftBoundary += ltOpeningTokenOffset + 1
 				}
-				object = new Literal(literalValue, lang || datatype)
+				object =
+					lang === null
+						? new Literal(literalValue, "", datatype)
+						: new Literal(literalValue, lang, rdfLangString)
 				break
 			default:
 				throw unexpectedCharError(line.charAt(leftBoundary))

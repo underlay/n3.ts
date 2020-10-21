@@ -13,13 +13,16 @@ export type TermType =
 	| VariableT
 	| QuadT
 
-export type NamedNode = { termType: "NamedNode"; value: string }
+export type NamedNode<T extends string = string> = {
+	termType: "NamedNode"
+	value: T
+}
 export type BlankNode = { termType: "BlankNode"; value: string }
-export type Literal = {
+export type Literal<T extends string = string> = {
 	termType: "Literal"
 	value: string
 	language: string
-	datatype: NamedNode
+	datatype: NamedNode<T>
 }
 export type DefaultGraph = { termType: "DefaultGraph"; value: "" }
 export type Variable = { termType: "Variable"; value: string }

@@ -5,9 +5,9 @@ import { rdf, xsd } from "./IRIs.js"
 
 let _blankNodeCounter = 0
 
-export class NamedNode<Iri extends string = string>
-	implements RDF.NamedNode, DataModel.NamedNode {
-	constructor(readonly value: Iri) {}
+export class NamedNode<T extends string = string>
+	implements RDF.NamedNode, DataModel.NamedNode<T> {
+	constructor(readonly value: T) {}
 
 	get termType(): DataModel.NamedNodeT {
 		return "NamedNode"
@@ -36,34 +36,20 @@ export class NamedNode<Iri extends string = string>
 const xsdString = new NamedNode(xsd.string)
 const rdfLangString = new NamedNode(rdf.langString)
 
-export class Literal implements RDF.Literal, DataModel.Literal {
+export class Literal<T extends string = string>
+	implements RDF.Literal, DataModel.Literal<T> {
 	readonly id: string
-	readonly language: string
-	readonly datatype: NamedNode
 	constructor(
 		readonly value: string,
-		languageOrDataType?: null | string | DataModel.NamedNode
+		readonly language: T extends typeof rdf.langString ? string : "",
+		readonly datatype: NamedNode<T>
 	) {
-		if (typeof languageOrDataType === "string") {
-			this.language = languageOrDataType.toLowerCase()
-			this.id = `"${value}"@${this.language}`
-			this.datatype = rdfLangString
-		} else if (
-			languageOrDataType === null ||
-			languageOrDataType === undefined ||
-			languageOrDataType.value === xsd.string
-		) {
-			this.id = `"${value}"`
-			this.language = ""
-			this.datatype = xsdString
+		if (datatype.value === xsd.string) {
+			this.id = `"${JSON.stringify(value)}"`
+		} else if (datatype.value === rdf.langString && language !== "") {
+			this.id = `"${JSON.stringify(value)}"@${this.language}`
 		} else {
-			this.id = `"${value}"^^<${languageOrDataType.value}>`
-			this.language = ""
-			if (languageOrDataType instanceof NamedNode) {
-				this.datatype = languageOrDataType
-			} else {
-				this.datatype = new NamedNode(languageOrDataType.value)
-			}
+			this.id = `"${JSON.stringify(value)}"^^<${datatype.value}>`
 		}
 	}
 
@@ -200,12 +186,12 @@ export function fromId(id: string) {
 
 			const value = id.slice(1, i)
 			if (id.length === i + 1) {
-				return new Literal(value, null)
+				return new Literal(value, "", xsdString)
 			} else if (id[i + 1] === "@") {
-				return new Literal(value, id.slice(i + 2))
+				return new Literal(value, id.slice(i + 2), rdfLangString)
 			} else if (id.slice(i, i + 4) === '"^^<' && id[id.length - 1] === ">") {
 				const datatype = new NamedNode(id.slice(i + 4, -1))
-				return new Literal(value, datatype)
+				return new Literal(value, "", datatype)
 			} else {
 				throw new Error(`Invalid literal id ${id}`)
 			}
@@ -318,14 +304,21 @@ function namedNode<Iri extends string>(iri: Iri): RDF.NamedNode<Iri> {
 }
 
 function blankNode(name: string): RDF.BlankNode {
-	return new BlankNode(name || `n4-${_blankNodeCounter++}`)
+	return new BlankNode(name || `b${_blankNodeCounter++}`)
 }
 
 function literal(
 	value: string,
-	languageOrDataType?: string | NamedNode
+	languageOrDataType?: string | RDF.NamedNode
 ): RDF.Literal {
-	return new Literal(value, languageOrDataType || null)
+	if (languageOrDataType === undefined) {
+		return new Literal(value, "", xsdString)
+	} else if (typeof languageOrDataType === "string") {
+		return new Literal(value, languageOrDataType, rdfLangString)
+	} else {
+		const datatype = new NamedNode(languageOrDataType.value)
+		return new Literal(value, "", datatype)
+	}
 }
 
 function variable(name: string): RDF.Variable {

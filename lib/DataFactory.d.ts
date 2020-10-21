@@ -1,19 +1,20 @@
 import * as RDF from "rdf-js";
 import * as DataModel from "./DataModel.js";
-export declare class NamedNode<Iri extends string = string> implements RDF.NamedNode, DataModel.NamedNode {
-    readonly value: Iri;
-    constructor(value: Iri);
+import { rdf } from "./IRIs.js";
+export declare class NamedNode<T extends string = string> implements RDF.NamedNode, DataModel.NamedNode<T> {
+    readonly value: T;
+    constructor(value: T);
     get termType(): DataModel.NamedNodeT;
     get id(): string;
     equals(other?: null | RDF.Term): boolean;
     toJSON(): DataModel.NamedNode;
 }
-export declare class Literal implements RDF.Literal, DataModel.Literal {
+export declare class Literal<T extends string = string> implements RDF.Literal, DataModel.Literal<T> {
     readonly value: string;
+    readonly language: T extends typeof rdf.langString ? string : "";
+    readonly datatype: NamedNode<T>;
     readonly id: string;
-    readonly language: string;
-    readonly datatype: NamedNode;
-    constructor(value: string, languageOrDataType?: null | string | DataModel.NamedNode);
+    constructor(value: string, language: T extends typeof rdf.langString ? string : "", datatype: NamedNode<T>);
     get termType(): DataModel.LiteralT;
     get datatypeString(): string;
     equals(term?: null | RDF.Term): boolean;
@@ -43,7 +44,7 @@ export declare class DefaultGraph implements RDF.DefaultGraph, DataModel.Default
     toJSON(): DataModel.DefaultGraph;
 }
 export declare const Default: DefaultGraph;
-export declare function fromId(id: string): Literal | NamedNode<string> | BlankNode | Variable | DefaultGraph;
+export declare function fromId(id: string): BlankNode | Variable | DefaultGraph | NamedNode<string> | Literal<string>;
 export declare function toId(term: string | DataModel.Term): string;
 export interface D extends DataModel.DataModel {
     NamedNode: NamedNode;

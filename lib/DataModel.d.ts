@@ -5,19 +5,19 @@ export declare type DefaultGraphT = "DefaultGraph";
 export declare type VariableT = "Variable";
 export declare type QuadT = "Quad";
 export declare type TermType = NamedNodeT | LiteralT | BlankNodeT | DefaultGraphT | VariableT | QuadT;
-export declare type NamedNode = {
+export declare type NamedNode<T extends string = string> = {
     termType: "NamedNode";
-    value: string;
+    value: T;
 };
 export declare type BlankNode = {
     termType: "BlankNode";
     value: string;
 };
-export declare type Literal = {
+export declare type Literal<T extends string = string> = {
     termType: "Literal";
     value: string;
     language: string;
-    datatype: NamedNode;
+    datatype: NamedNode<T>;
 };
 export declare type DefaultGraph = {
     termType: "DefaultGraph";
