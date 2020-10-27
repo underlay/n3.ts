@@ -5,6 +5,6 @@
 		"strict": true,
 		"alwaysStrict": true,
 		"declaration": true,
-		"outDir": "lib"
+		"outDir": "es6"
 	}
 }

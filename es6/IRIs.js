@@ -1,9 +1,3 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.rdf = exports.xsd = void 0;
 const xsdDecimal = "http://www.w3.org/2001/XMLSchema#decimal";
 const xsdBoolean = "http://www.w3.org/2001/XMLSchema#boolean";
 const xsdDouble = "http://www.w3.org/2001/XMLSchema#double";
@@ -19,24 +13,22 @@ const rdfFirst = "http://www.w3.org/1999/02/22-rdf-syntax-ns#first";
 const rdfRest = "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest";
 const rdfLangString = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString";
 const rdfJSON = "http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON";
-const xsd = {
-  decimal: xsdDecimal,
-  boolean: xsdBoolean,
-  double: xsdDouble,
-  integer: xsdInteger,
-  string: xsdString,
-  date: xsdDate,
-  dateTime: xsdDateTime,
-  hexBinary: xsdHexBinary,
-  base64Binary: xsdBase64Binary
+export const xsd = {
+    decimal: xsdDecimal,
+    boolean: xsdBoolean,
+    double: xsdDouble,
+    integer: xsdInteger,
+    string: xsdString,
+    date: xsdDate,
+    dateTime: xsdDateTime,
+    hexBinary: xsdHexBinary,
+    base64Binary: xsdBase64Binary,
 };
-exports.xsd = xsd;
-const rdf = {
-  type: rdfType,
-  nil: rdfNil,
-  first: rdfFirst,
-  rest: rdfRest,
-  langString: rdfLangString,
-  JSON: rdfJSON
+export const rdf = {
+    type: rdfType,
+    nil: rdfNil,
+    first: rdfFirst,
+    rest: rdfRest,
+    langString: rdfLangString,
+    JSON: rdfJSON,
 };
-exports.rdf = rdf;

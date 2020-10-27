@@ -1,16 +1,17 @@
 {
 	"name": "n3.ts",
-	"type": "module",
-	"version": "0.1.5",
+	"version": "0.2.0",
 	"description": "",
 	"main": "lib/index.js",
-	"types": "lib/index.d.ts",
-	"module": "lib/index.js",
+	"types": "es6/index.d.ts",
+	"module": "es6/index.js",
 	"directories": {
-		"lib": "lib"
+		"lib": "lib",
+		"es6": "es6"
 	},
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"build": "tsc && npx babel es6 -d lib"
 	},
 	"repository": {
 		"type": "git",
@@ -24,5 +25,10 @@
 	"homepage": "https://github.com/underlay/n3.ts#readme",
 	"dependencies": {
 		"@types/rdf-js": "^4.0.0"
+	},
+	"devDependencies": {
+		"@babel/cli": "^7.12.1",
+		"@babel/core": "^7.12.3",
+		"@babel/plugin-transform-modules-commonjs": "^7.12.1"
 	}
 }
