@@ -45,11 +45,11 @@ export class Literal<T extends string = string>
 		readonly datatype: NamedNode<T>
 	) {
 		if (datatype.value === xsd.string) {
-			this.id = `"${JSON.stringify(value)}"`
+			this.id = JSON.stringify(value)
 		} else if (datatype.value === rdf.langString && language !== "") {
-			this.id = `"${JSON.stringify(value)}"@${this.language}`
+			this.id = `${JSON.stringify(value)}@${this.language}`
 		} else {
-			this.id = `"${JSON.stringify(value)}"^^<${datatype.value}>`
+			this.id = `${JSON.stringify(value)}^^<${datatype.value}>`
 		}
 	}
 

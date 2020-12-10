@@ -1,6 +1,6 @@
 {
 	"name": "n3.ts",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "",
 	"main": "lib/index.js",
 	"types": "es6/index.d.ts",
@@ -27,8 +27,8 @@
 		"@types/rdf-js": "^4.0.0"
 	},
 	"devDependencies": {
-		"@babel/cli": "^7.12.1",
-		"@babel/core": "^7.12.3",
+		"@babel/cli": "^7.12.10",
+		"@babel/core": "^7.12.10",
 		"@babel/plugin-transform-modules-commonjs": "^7.12.1"
 	}
 }
