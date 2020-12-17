@@ -1,6 +1,6 @@
 {
 	"name": "n3.ts",
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"description": "",
 	"main": "lib/index.js",
 	"types": "es6/index.d.ts",
@@ -29,6 +29,7 @@
 	"devDependencies": {
 		"@babel/cli": "^7.12.10",
 		"@babel/core": "^7.12.10",
+		"@babel/plugin-proposal-export-namespace-from": "^7.12.1",
 		"@babel/plugin-transform-modules-commonjs": "^7.12.1"
 	}
 }
