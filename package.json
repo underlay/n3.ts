@@ -1,17 +1,16 @@
 {
 	"name": "n3.ts",
-	"version": "0.2.4",
+	"version": "0.2.5",
 	"description": "",
 	"main": "lib/index.js",
-	"types": "es6/index.d.ts",
-	"module": "es6/index.js",
-	"directories": {
-		"lib": "lib",
-		"es6": "es6"
-	},
+	"types": "lib/index.d.ts",
+	"files": [
+		"lib"
+	],
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"build": "tsc && npx babel es6 -d lib"
+		"test": "npx jest",
+		"clean": "rm -rf lib",
+		"build": "tsc && npx babel src -d lib --extensions '.ts'"
 	},
 	"repository": {
 		"type": "git",
@@ -30,6 +29,7 @@
 		"@babel/cli": "^7.12.10",
 		"@babel/core": "^7.12.10",
 		"@babel/plugin-proposal-export-namespace-from": "^7.12.1",
-		"@babel/plugin-transform-modules-commonjs": "^7.12.1"
+		"@babel/plugin-transform-modules-commonjs": "^7.12.1",
+		"@babel/plugin-transform-typescript": "^7.12.1"
 	}
 }

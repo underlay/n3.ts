@@ -1,6 +1,6 @@
 import * as RDF from "rdf-js";
 import * as DataModel from "./DataModel.js";
-import { rdf } from "./IRIs.js";
+import { rdf } from "./namespaces/index.js";
 export declare class NamedNode<T extends string = string> implements RDF.NamedNode, DataModel.NamedNode<T> {
     readonly value: T;
     constructor(value: T);

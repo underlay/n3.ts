@@ -5,6 +5,7 @@
 		"strict": true,
 		"alwaysStrict": true,
 		"declaration": true,
-		"outDir": "es6"
+		"emitDeclarationOnly": true,
+		"outDir": "lib"
 	}
 }

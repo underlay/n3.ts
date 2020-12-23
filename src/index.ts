@@ -1,4 +1,4 @@
-export * from "./IRIs.js"
+export * from "./namespaces/index.js"
 import {
 	DataModel,
 	Term,

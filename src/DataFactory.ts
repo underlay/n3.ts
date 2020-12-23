@@ -1,7 +1,7 @@
 import * as RDF from "rdf-js"
 import * as DataModel from "./DataModel.js"
 
-import { rdf, xsd } from "./IRIs.js"
+import { rdf, xsd } from "./namespaces/index.js"
 
 let _blankNodeCounter = 0
 
